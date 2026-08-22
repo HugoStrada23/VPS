@@ -1,0 +1,36 @@
+Connecting through SSH
+
+You will need the OpenSSH-client on your local machine and the OpenSSH-server on the vps (be default it should have it)
+
+You can connect through username and password (and you will on your first connection) or by a pair of keys.
+
+When generating a pair of keys (on your local machine) you will have a public key and a private key. The public key will be shared with your vps (paste it on ~/.ssh/authorized-keys), so that it knows your pc can connect.
+The private key won't be shared, instead it will be used to generate a signing that, when shared with the server that you are trying to connect to, can prove you have the private key by verifying the signing with the public key.
+
+How to:
+
+1. you need to make sure there is a /.ssh directory.
+mkdir ~/.ssh
+
+2. then you will generate the pair of keys with a command like this:
+ssh-keygen -t ed25519 -a 100
+
+(rsa is also considered reosonable, but I heard this is the best way security wise)
+it will ask for a passphrase for the directory, is it recommended you use one but not required
+
+3. You will find two files inside ~/.ssh/
+ls ~/.ssh
+id_ed25519 and id_ed25519.pub
+
+the first is the private key (not shared) and the second is the public key (which will share with the vps host)
+
+4. Share the public key
+inside the vps host (first time connect through ssh {USER}@{VPS_ID} with the values that provider gives you), copy the result of
+
+cat ~/.ssh/id_ed25519.pub (on your local machine)
+inside
+~/.ssh/authorized_keys (on the vps)
+
+You can copy the key to your user's ssh folder or your root's ssh folder, that will allow you to ssh through a pair of keys with root or normal user
+
+5. Try to connect to your vps through ssh, if it asks for the user's password (different for the passphrase) then something went wrong, otherwise you successfully set up a pair of keys to connect to your vps.
