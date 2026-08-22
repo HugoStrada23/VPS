@@ -1,0 +1,25 @@
+Futuramente a vps vai ter varios serviços, mas a vps tem uma interface de rede publica, portanto uma firewall (ou um conjunto de regras do que pode ou nao entrar/sair) é essencial.
+
+Queremos definir que serviços ficam expostos, por exemplo, para aceder por ssh a porta 21 fica exposta, mas não temos de deixar um possivel serviço como postgresql a correr num porta exposto à internet.
+
+A estrategia mais simples é DEFAULT DENY.
+bloqueamos tudo e permitimos o necessario.
+
+INBOUND = Internet -> VPS
+OUTBOUND = VPS -> INTERNET
+
+Queremos proibir tudo por defeito inbound e permitir consoante a necessidade, nesse caso (usando a ferramenta ufw)
+sudo ufw default deny incoming
+
+Outbound, o contrario
+sudo ufw default allow outgoing
+
+Queremos permitir o ssh
+sudo ufw allow OpenSSH
+
+depois disso sudo ufw enable para entrar em vigor
+
+Para testar podemos fazer
+nc -zv IP_DA_VPS porta
+Para porta 22 (permitimos) deve aparecer succeded
+Para oturas portas deve dar timed out
