@@ -1,0 +1,21 @@
+Now that you are inside the vps with root, we will create a new user and give it sudo.
+
+The goal is to desable root ssh and only permit connection with user and key, so:
+
+PasswordAuthentication no
+PubkeyAuthentication yes
+PermitRootLogin no
+
+1. Create a new user and give it sudo perms
+adduser user
+(it will ask for a password, remember it)
+
+usermod -aG sudo user
+
+check groups user
+
+2. Copy the authorized_keys file in root/.ssh/ to the new user's ssh folder,
+cp /root/.ssh/authorized_keys /home/user/.ssh/authorized_keys
+
+and test if it connects
+
