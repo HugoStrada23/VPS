@@ -1,0 +1,130 @@
+
+--CONTAINER/IMAGE---
+
+docker run hello-world
+
+1. The Docker client contacted the Docker daemon.
+2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+docker run hello-world
+        │
+        ▼
+cria container
+        │
+        ▼
+executa processo
+        │
+        ▼
+processo termina
+        │
+        ▼
+container fica stopped
+
+sudo docker ps -a
+CONTAINER ID   IMAGE         COMMAND    CREATED              STATUS                          PORTS     NAMES
+2c462bcf39f2   hello-world   "/hello"   About a minute ago   Exited (0) About a minute ago             zealous_spence
+
+sudo docker ps
+Ja não aparece, porque o processo já terminou.
+
+
+sudo docker run --name my-nginx nginx
+procura localmente se a image nginx existe, se não encontrar dá download, inicia o container e fica a correr
+
+sudo docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS     NAMES
+7796c301b769   nginx     "/docker-entrypoint.…"   38 seconds ago   Up 37 seconds   80/tcp    my-nginx
+
+O container está a correr na porta 80 do docker, diferente da porta 80 do host. Criemos um container com a porta 8080 do host para a 80 do container:
+sudo docker stop my-nginx
+sudo docker rm my-nginx
+sudo docker run -d --name my-nginx -p 8080:80 nginx
+sudo docker ps
+
+CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS         PORTS                                     NAMES
+e62cbd46e595   nginx     "/docker-entrypoint.…"   3 seconds ago   Up 2 seconds   0.0.0.0:8080->80/tcp, [::]:8080->80/tcp   my-nginx
+
+curl http://localhost:80 (a partir da propria maquina)
+curl http://IP_DA_MAQUINA:8080 (de uma maquina exterior)
+
+O fluxo é INTERNET -> MAQUINA:8080 -> REDE DOCKER -> CONTAINER:80
+
+É interessante também ver como o ufw (firewall instalada com regra para proibir inbound) não afeta a porta. Porque o docker cria o container com regras de rede no kernel que ingoram a configuraçao do ufw.
+
+---VOLUMES---
+Podemos criar volumes de forma a que os dados escritos num container serjam persistentes
+sudo docker volume create my-volume
+sudo docker volume ls
+DRIVER    VOLUME NAME
+local     my-volume
+
+sudo docker run -d --name volume-test -v my-volume:/data nginx
+Aqui criamos um container montado no volume, as coisas ficam escritas no /data
+Vamos testar escrever lá algo
+
+sudo docker exec -it volume-test bash (executa um processo de bash dentro do container)
+nano /data/test.txt e escrevemos lá algo ou echo "hello world" > /data/test.txt
+cat /data/test.txt
+deve aparecer aqui algo
+
+Agora vamos destruir o container e criar um novo montado no volume e testar se os dados foram destruidos ou nao
+sudo docker stop volume-test
+sudo docker rm volume-test
+sudo docker run -d --name volume-test-2 -v my-volume:/data nginx
+sudo docker exec -it volume-test-2 bash
+cat /data/test.txt
+
+---NETWORKS---
+
+sudo docker network ls
+
+sudo docker network create minha-rede
+
+sudo docker network ls
+
+Vamos criar 2 containers, mas pô-los na mesma rede docker que criamos
+
+sudo docker run -d --name servidor1 --network minha-rede nginx
+sudo docker run -d --name servidor2 --network minha-rede nginx
+
+Vemos como eles comunicam um com o outro por estarem na mesma rede
+
+sudo docker exec -it servidor2 bash
+curl http://servidor1
+
+---COMPOSE---
+Agora que entendemos volumes, networks e containers, vamos reproduzir este ultimo ambiente para um compose.yml e depois dar compose no ambiente, sem termos de correr os comandos todos.
+Na sua essência, em vez de imperar cria x container, cria x rede, cria container na rede x e monta o volume y. Vamos descrever o estado do ambiente que queremos:
+
+mkdir docker-test
+nano /docker-test/compose.yml
+
+services:
+  servidor1:
+    image: nginx
+    networks:
+      - minha-rede
+  servidor2:
+    image: nginx
+    networks:
+      -minha-rede
+  networks:
+    minha-rede:
+
+
+
+Dentro da pasta do compose.yml:
+sudo docker compose up
+sudo docker ps
+sudo docker exec -it nome_do_container2 bash
+curl http://nome_do_container
+nota: o nome do container vai ser provalemente (assumindo os comandos que eu usei) docker-test-servidor-1-1, mas o dns na rede do docker tanto reconhece http://docker-test-servidor-1-1 como http://servidor1
+pelos meus testes.
+
+
+
